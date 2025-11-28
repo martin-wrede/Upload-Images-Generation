@@ -61,79 +61,8 @@ async function onRequest({ request, env }) {
 }
 __name(onRequest, "onRequest");
 
-// airtable.js
-async function onRequest2({ request, env }) {
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-      }
-    });
-  }
-  if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
-  }
-  try {
-    const { prompt, imageUrl, user, email, files } = await request.json();
-    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const fields = {
-      Prompt: prompt,
-      User: user || "Anonymous",
-      Email: email,
-      Image: [
-        {
-          url: imageUrl
-        }
-      ],
-      Timestamp: timestamp
-    };
-    console.log(JSON.stringify({ fields }));
-    console.log("Prompt:", prompt);
-    console.log("Type of Prompt:", typeof prompt);
-    console.log("Image URL:", imageUrl);
-    console.log("User:", user);
-    if (!imageUrl) {
-      return new Response(JSON.stringify({ error: "Missing imageUrl" }), {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
-      });
-    }
-    const airtableRes = await fetch(airtableUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${env.AIRTABLE_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ fields })
-    });
-    const data = await airtableRes.json();
-    return new Response(JSON.stringify(data), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-      }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-      }
-    });
-  }
-}
-__name(onRequest2, "onRequest");
-
 // upload_images.js
-async function onRequest3({ request, env }) {
+async function onRequest2({ request, env }) {
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -199,7 +128,7 @@ async function onRequest3({ request, env }) {
     });
   }
 }
-__name(onRequest3, "onRequest");
+__name(onRequest2, "onRequest");
 
 // ../.wrangler/tmp/pages-AvBiBT/functionsRoutes-0.7287364296513716.mjs
 var routes = [
@@ -211,18 +140,11 @@ var routes = [
     modules: [onRequest]
   },
   {
-    routePath: "/airtable",
-    mountPath: "/",
-    method: "",
-    middlewares: [],
-    modules: [onRequest2]
-  },
-  {
     routePath: "/upload_images",
     mountPath: "/",
     method: "",
     middlewares: [],
-    modules: [onRequest3]
+    modules: [onRequest2]
   }
 ];
 
@@ -713,7 +635,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-AZUZJR/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-BcNoYS/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -745,7 +667,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-AZUZJR/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-BcNoYS/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
