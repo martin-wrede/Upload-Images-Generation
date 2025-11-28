@@ -14,3 +14,15 @@ Currently, two official plugins are available:
 
 
 URL = https://airtable.com/app43PSg6pTJ9HhY2/tblZn0kJvbvG92ksR/viw88UeEs8qIV0hu1?blocks=hide
+
+# Cloudflare Bindings
+Variables
+R2_PUBLIC_URL=https://pub-2e08632872a645f89f91aad5f2904c70.r2.dev
+
+KV namespace
+Bindings
+TASK_INFO_KV=TASK_INFO_KV
+
+R2 bucket
+IMAGE_BUCKET
+react-image-video

@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/pages-BonKWn/functionsWorker-0.43189003059084285.mjs
+// .wrangler/tmp/pages-AvBiBT/functionsWorker-0.5326742502898181.mjs
 var __defProp2 = Object.defineProperty;
 var __name2 = /* @__PURE__ */ __name((target, value) => __defProp2(target, "name", { value, configurable: true }), "__name");
 async function onRequest({ request, env }) {
@@ -78,19 +78,21 @@ async function onRequest2({ request, env }) {
     return new Response("Method Not Allowed", { status: 405 });
   }
   try {
-    const { prompt, imageUrl, user } = await request.json();
+    const { prompt, imageUrl, user, email, files } = await request.json();
     const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-    console.log(JSON.stringify({
-      fields: {
-        Prompt: prompt,
-        User: user || "Anonymous",
-        Image: [
-          {
-            url: imageUrl
-          }
-        ]
-      }
-    }));
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+    const fields = {
+      Prompt: prompt,
+      User: user || "Anonymous",
+      Email: email,
+      Image: [
+        {
+          url: imageUrl
+        }
+      ],
+      Timestamp: timestamp
+    };
+    console.log(JSON.stringify({ fields }));
     console.log("Prompt:", prompt);
     console.log("Type of Prompt:", typeof prompt);
     console.log("Image URL:", imageUrl);
@@ -110,17 +112,7 @@ async function onRequest2({ request, env }) {
         "Authorization": `Bearer ${env.AIRTABLE_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        fields: {
-          Prompt: prompt,
-          User: user || "Anonymous",
-          Image: [
-            {
-              url: imageUrl
-            }
-          ]
-        }
-      })
+      body: JSON.stringify({ fields })
     });
     const data = await airtableRes.json();
     return new Response(JSON.stringify(data), {
@@ -141,6 +133,74 @@ async function onRequest2({ request, env }) {
 }
 __name(onRequest2, "onRequest2");
 __name2(onRequest2, "onRequest");
+async function onRequest3({ request, env }) {
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    });
+  }
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+  try {
+    const formData = await request.formData();
+    const name = formData.get("name");
+    const email = formData.get("email");
+    const files = formData.getAll("images");
+    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+    const uploadedImageUrls = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        if (file instanceof File) {
+          const key = `${Date.now()}-${file.name}`;
+          await env.IMAGE_BUCKET.put(key, file.stream());
+          const publicUrl = `${env.R2_PUBLIC_URL}/${key}`;
+          uploadedImageUrls.push({ url: publicUrl });
+        }
+      }
+    }
+    const fields = {
+      User: name || "Anonymous",
+      Email: email,
+      Timestamp: timestamp
+    };
+    if (uploadedImageUrls.length > 0) {
+      fields.Image_Upload = uploadedImageUrls;
+    }
+    console.log("Saving upload to Airtable:", JSON.stringify({ fields }));
+    const airtableRes = await fetch(airtableUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.AIRTABLE_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ fields })
+    });
+    const data = await airtableRes.json();
+    return new Response(JSON.stringify(data), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  }
+}
+__name(onRequest3, "onRequest3");
+__name2(onRequest3, "onRequest");
 var routes = [
   {
     routePath: "/ai",
@@ -155,6 +215,13 @@ var routes = [
     method: "",
     middlewares: [],
     modules: [onRequest2]
+  },
+  {
+    routePath: "/upload_images",
+    mountPath: "/",
+    method: "",
+    middlewares: [],
+    modules: [onRequest3]
   }
 ];
 function lexer(str) {
@@ -822,7 +889,7 @@ var jsonError2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default2 = jsonError2;
 
-// .wrangler/tmp/bundle-y3uDLw/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-8q825Z/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__2 = [
   middleware_ensure_req_body_drained_default2,
   middleware_miniflare3_json_error_default2
@@ -854,7 +921,7 @@ function __facade_invoke__2(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__2, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-y3uDLw/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-8q825Z/middleware-loader.entry.ts
 var __Facade_ScheduledController__2 = class ___Facade_ScheduledController__2 {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
@@ -954,4 +1021,4 @@ export {
   __INTERNAL_WRANGLER_MIDDLEWARE__2 as __INTERNAL_WRANGLER_MIDDLEWARE__,
   middleware_loader_entry_default2 as default
 };
-//# sourceMappingURL=functionsWorker-0.43189003059084285.js.map
+//# sourceMappingURL=functionsWorker-0.5326742502898181.js.map

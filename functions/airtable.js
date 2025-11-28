@@ -17,22 +17,33 @@ export async function onRequest({ request, env }) {
   }
 
   try {
-    const { prompt, imageUrl, user } = await request.json();
+    const { prompt, imageUrl, user, email, files } = await request.json();
 
-    // const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(env.AIRTABLE_TABLE_NAME)}`;
     const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
 
-    console.log(JSON.stringify({
-      fields: {
-        Prompt: prompt,
-        User: user || 'Anonymous',
-        Image: [
-          {
-            url: imageUrl
-          }
-        ]
-      }
-    }));
+
+    const timestamp = new Date().toISOString();
+
+    const fields = {
+      Prompt: prompt,
+      User: user || 'Anonymous',
+      Email: email,
+      Image: [
+        {
+          url: imageUrl
+        }
+      ],
+      Timestamp: timestamp
+    };
+
+    // Note: Airtable requires a public URL for attachments. 
+    // Since we don't have a storage service yet, we can't attach the uploaded files directly.
+    // If 'files' contained URLs, we would map them here:
+    // if (files && files.length > 0) {
+    //   fields.Image_Upload = files.map(f => ({ url: f.url }));
+    // }
+
+    console.log(JSON.stringify({ fields }));
 
     console.log("Prompt:", prompt);
 
@@ -59,17 +70,7 @@ export async function onRequest({ request, env }) {
         'Authorization': `Bearer ${env.AIRTABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        fields: {
-          Prompt: prompt,
-          User: user || 'Anonymous',
-          Image: [
-            {
-              url: imageUrl
-            }
-          ]
-        }
-      })
+      body: JSON.stringify({ fields })
     });
 
     const data = await airtableRes.json();
