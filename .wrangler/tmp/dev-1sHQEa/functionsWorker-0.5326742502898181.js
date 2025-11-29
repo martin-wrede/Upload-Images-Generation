@@ -125,6 +125,7 @@ async function onRequest2({ request, env }) {
         }
       });
     }
+    console.log("Saving to Airtable with fields:", JSON.stringify(fields, null, 2));
     const airtableRes = await fetch(airtableUrl, {
       method: "POST",
       headers: {
@@ -133,7 +134,22 @@ async function onRequest2({ request, env }) {
       },
       body: JSON.stringify({ fields })
     });
-    const data = await airtableRes.json();
+    const responseBody = await airtableRes.text();
+    console.log("Airtable Response Status:", airtableRes.status);
+    console.log("Airtable Response Body:", responseBody);
+    let data;
+    try {
+      data = JSON.parse(responseBody);
+    } catch (e) {
+      data = { error: "Failed to parse Airtable response", body: responseBody };
+    }
+    if (!airtableRes.ok) {
+      console.error("Airtable API Error:", data);
+      return new Response(JSON.stringify({ error: "Airtable API Error", details: data }), {
+        status: airtableRes.status,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     return new Response(JSON.stringify(data), {
       headers: {
         "Content-Type": "application/json",
@@ -193,7 +209,7 @@ async function onRequest3({ request, env }) {
     if (uploadedImageUrls.length > 0) {
       fields.Image_Upload = uploadedImageUrls;
     }
-    console.log("Saving upload to Airtable:", JSON.stringify({ fields }));
+    console.log("Saving upload to Airtable with fields:", JSON.stringify(fields, null, 2));
     const airtableRes = await fetch(airtableUrl, {
       method: "POST",
       headers: {
@@ -202,7 +218,22 @@ async function onRequest3({ request, env }) {
       },
       body: JSON.stringify({ fields })
     });
-    const data = await airtableRes.json();
+    const responseBody = await airtableRes.text();
+    console.log("Airtable Response Status:", airtableRes.status);
+    console.log("Airtable Response Body:", responseBody);
+    let data;
+    try {
+      data = JSON.parse(responseBody);
+    } catch (e) {
+      data = { error: "Failed to parse Airtable response", body: responseBody };
+    }
+    if (!airtableRes.ok) {
+      console.error("Airtable API Error:", data);
+      return new Response(JSON.stringify({ error: "Airtable API Error", details: data }), {
+        status: airtableRes.status,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     return new Response(JSON.stringify(data), {
       headers: {
         "Content-Type": "application/json",

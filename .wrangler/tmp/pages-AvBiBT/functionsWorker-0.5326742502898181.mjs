@@ -124,6 +124,7 @@ async function onRequest2({ request, env }) {
         }
       });
     }
+    console.log("Saving to Airtable with fields:", JSON.stringify(fields, null, 2));
     const airtableRes = await fetch(airtableUrl, {
       method: "POST",
       headers: {
@@ -132,7 +133,22 @@ async function onRequest2({ request, env }) {
       },
       body: JSON.stringify({ fields })
     });
-    const data = await airtableRes.json();
+    const responseBody = await airtableRes.text();
+    console.log("Airtable Response Status:", airtableRes.status);
+    console.log("Airtable Response Body:", responseBody);
+    let data;
+    try {
+      data = JSON.parse(responseBody);
+    } catch (e) {
+      data = { error: "Failed to parse Airtable response", body: responseBody };
+    }
+    if (!airtableRes.ok) {
+      console.error("Airtable API Error:", data);
+      return new Response(JSON.stringify({ error: "Airtable API Error", details: data }), {
+        status: airtableRes.status,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     return new Response(JSON.stringify(data), {
       headers: {
         "Content-Type": "application/json",
@@ -193,7 +209,7 @@ async function onRequest3({ request, env }) {
     if (uploadedImageUrls.length > 0) {
       fields.Image_Upload = uploadedImageUrls;
     }
-    console.log("Saving upload to Airtable:", JSON.stringify({ fields }));
+    console.log("Saving upload to Airtable with fields:", JSON.stringify(fields, null, 2));
     const airtableRes = await fetch(airtableUrl, {
       method: "POST",
       headers: {
@@ -202,7 +218,22 @@ async function onRequest3({ request, env }) {
       },
       body: JSON.stringify({ fields })
     });
-    const data = await airtableRes.json();
+    const responseBody = await airtableRes.text();
+    console.log("Airtable Response Status:", airtableRes.status);
+    console.log("Airtable Response Body:", responseBody);
+    let data;
+    try {
+      data = JSON.parse(responseBody);
+    } catch (e) {
+      data = { error: "Failed to parse Airtable response", body: responseBody };
+    }
+    if (!airtableRes.ok) {
+      console.error("Airtable API Error:", data);
+      return new Response(JSON.stringify({ error: "Airtable API Error", details: data }), {
+        status: airtableRes.status,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     return new Response(JSON.stringify(data), {
       headers: {
         "Content-Type": "application/json",
@@ -733,7 +764,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-kdyv47/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-scRLi2/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -765,7 +796,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-kdyv47/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-scRLi2/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
