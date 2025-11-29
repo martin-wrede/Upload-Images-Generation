@@ -10,117 +10,120 @@ export async function onRequest({ request, env }) {
             },
         });
     }
+    const checkData = await checkRes.json();
+    console.log("Pending record check result:", JSON.stringify(checkData));
 
-    if (request.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
+    if (checkData.records && checkData.records.length > 0) {
+        pendingRecordId = checkData.records[0].id;
+        console.log("Found pending record ID:", pendingRecordId);
+    } else {
+        console.log("No pending record found.");
     }
-
-    try {
-        const formData = await request.formData();
-        const name = formData.get('name');
-        const email = formData.get('email');
-        const uploadColumn = formData.get('uploadColumn') || 'Image_Upload2'; // Default to Image_Upload2
-        const files = formData.getAll('images');
-        // Logic: Block Test if pending exists
-        if (uploadColumn === 'Image_Upload' && pendingRecordId) {
-            return new Response(JSON.stringify({
-                error: "You have a pending test package. Please upload your final images to complete the cycle."
-            }), {
-                status: 403,
-                headers: { "Content-Type": "application/json" }
-            });
+} catch (error) {
+    console.error("Error checking for pending record:", error);
+}
         }
 
-        const timestamp = new Date().toISOString();
-        const uploadedImageUrls = [];
+// Logic: Block Test if pending exists
+if (uploadColumn === 'Image_Upload' && pendingRecordId) {
+    return new Response(JSON.stringify({
+        error: "You have a pending test package. Please upload your final images to complete the cycle."
+    }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+    });
+}
 
-        // Upload files to R2
-        if (files && files.length > 0) {
-            for (const file of files) {
-                if (file instanceof File) {
-                    // Sanitize email: replace non-alphanumeric characters with underscores
-                    const safeEmail = email ? email.replace(/[^a-zA-Z0-9]/g, '_') : 'anonymous';
-                    const key = `${safeEmail}_${Date.now()}_${file.name}`;
+const timestamp = new Date().toISOString();
+const uploadedImageUrls = [];
 
-                    await env.IMAGE_BUCKET.put(key, file.stream());
-                    const publicUrl = `${env.R2_PUBLIC_URL}/${key}`;
-                    uploadedImageUrls.push({ url: publicUrl });
-                }
-            }
+// Upload files to R2
+if (files && files.length > 0) {
+    for (const file of files) {
+        if (file instanceof File) {
+            // Sanitize email: replace non-alphanumeric characters with underscores
+            const safeEmail = email ? email.replace(/[^a-zA-Z0-9]/g, '_') : 'anonymous';
+            const key = `${safeEmail}_${Date.now()}_${file.name}`;
+
+            await env.IMAGE_BUCKET.put(key, file.stream());
+            const publicUrl = `${env.R2_PUBLIC_URL}/${key}`;
+            uploadedImageUrls.push({ url: publicUrl });
         }
+    }
+}
 
-        const fields = {
-            User: name || 'Anonymous',
-            Timestamp: timestamp
-        };
+const fields = {
+    User: name || 'Anonymous',
+    Timestamp: timestamp
+};
 
-        if (email) {
-            fields.Email = email;
-        }
+if (email) {
+    fields.Email = email;
+}
 
-        if (uploadedImageUrls.length > 0) {
-            fields[uploadColumn] = uploadedImageUrls;
-        }
+if (uploadedImageUrls.length > 0) {
+    fields[uploadColumn] = uploadedImageUrls;
+}
 
-        console.log("Saving upload to Airtable with fields:", JSON.stringify(fields, null, 2));
+console.log("Saving upload to Airtable with fields:", JSON.stringify(fields, null, 2));
 
-        // Logic: Update if Paid and pending exists
-        let finalUrl = airtableUrl;
-        let method = 'POST';
+// Logic: Update if Paid and pending exists
+let finalUrl = airtableUrl;
+let method = 'POST';
 
-        if (uploadColumn === 'Image_Upload2' && pendingRecordId) {
-            finalUrl = `${airtableUrl}/${pendingRecordId}`;
-            method = 'PATCH';
-            console.log(`Updating pending record ${pendingRecordId}`);
-        }
+if (uploadColumn === 'Image_Upload2' && pendingRecordId) {
+    finalUrl = `${airtableUrl}/${pendingRecordId}`;
+    method = 'PATCH';
+    console.log(`Updating pending record ${pendingRecordId}`);
+}
 
-        const airtableRes = await fetch(finalUrl, {
-            method: method,
-            headers: {
-                'Authorization': `Bearer ${env.AIRTABLE_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ fields })
-        });
+const airtableRes = await fetch(finalUrl, {
+    method: method,
+    headers: {
+        'Authorization': `Bearer ${env.AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields })
+});
 
-        const responseBody = await airtableRes.text();
-        console.log("Airtable Response Status:", airtableRes.status);
-        console.log("Airtable Response Body:", responseBody);
+const responseBody = await airtableRes.text();
+console.log("Airtable Response Status:", airtableRes.status);
+console.log("Airtable Response Body:", responseBody);
 
-        let data;
-        try {
-            data = JSON.parse(responseBody);
-        } catch (e) {
-            data = { error: "Failed to parse Airtable response", body: responseBody };
-        }
+let data;
+try {
+    data = JSON.parse(responseBody);
+} catch (e) {
+    data = { error: "Failed to parse Airtable response", body: responseBody };
+}
 
-        if (!airtableRes.ok) {
-            console.error("Airtable API Error:", data);
-            const errorMessage = data.error?.message || "Unknown Airtable Error";
-            const errorType = data.error?.type || "UNKNOWN_TYPE";
-            return new Response(JSON.stringify({
-                error: errorMessage,
-                type: errorType,
-                details: data
-            }), {
-                status: airtableRes.status,
-                headers: { "Content-Type": "application/json" }
-            });
-        }
+if (!airtableRes.ok) {
+    console.error("Airtable API Error:", data);
+    const errorMessage = data.error?.message || "Unknown Airtable Error";
+    const errorType = data.error?.type || "UNKNOWN_TYPE";
+    return new Response(JSON.stringify({
+        error: errorMessage,
+        type: errorType,
+        details: data
+    }), {
+        status: airtableRes.status,
+        headers: { "Content-Type": "application/json" }
+    });
+}
 
-        return new Response(JSON.stringify(data), {
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-            },
-        });
+return new Response(JSON.stringify(data), {
+    headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+    },
+});
     } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-            status: 500,
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-            },
-        });
-    }
+    return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+        },
+    });
+}
 }
