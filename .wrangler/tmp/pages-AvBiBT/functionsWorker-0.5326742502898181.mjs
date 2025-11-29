@@ -84,25 +84,32 @@ async function onRequest2({ request, env }) {
     const email = formData.get("email");
     const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
-    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-    let pendingRecordId = null;
+    const airtableUrl2 = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
+    let pendingRecordId2 = null;
     if (email) {
-      const filterFormula = `AND({Email} = '${email}', NOT({Image_Upload} = ''), {Image_Upload2} = '')`;
+      const filterFormula = `{Email} = '${email}'`;
       const encodedFormula = encodeURIComponent(filterFormula);
-      const checkUrl = `${airtableUrl}?filterByFormula=${encodedFormula}&maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
+      const checkUrl = `${airtableUrl2}?filterByFormula=${encodedFormula}&maxRecords=10&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
       try {
         const checkRes = await fetch(checkUrl, {
           headers: { "Authorization": `Bearer ${env.AIRTABLE_API_KEY}` }
         });
         const checkData = await checkRes.json();
         if (checkData.records && checkData.records.length > 0) {
-          pendingRecordId = checkData.records[0].id;
+          const pendingRecord = checkData.records.find((record) => {
+            const hasTestImages = record.fields.Image_Upload && record.fields.Image_Upload.length > 0;
+            const hasPaidImages = record.fields.Image_Upload2 && record.fields.Image_Upload2.length > 0;
+            return hasTestImages && !hasPaidImages;
+          });
+          if (pendingRecord) {
+            pendingRecordId2 = pendingRecord.id;
+          }
         }
       } catch (error) {
         console.error("Error checking for pending record:", error);
       }
     }
-    if (uploadColumn === "Image_Upload" && pendingRecordId) {
+    if (uploadColumn === "Image_Upload" && pendingRecordId2) {
       return new Response(JSON.stringify({
         error: "You have a pending test package. Please upload your final images to complete the cycle."
       }), {
@@ -149,12 +156,12 @@ async function onRequest2({ request, env }) {
         }
       });
     }
-    let finalUrl = airtableUrl;
+    let finalUrl = airtableUrl2;
     let method = "POST";
-    if (uploadColumn === "Image_Upload2" && pendingRecordId) {
-      finalUrl = `${airtableUrl}/${pendingRecordId}`;
+    if (uploadColumn === "Image_Upload2" && pendingRecordId2) {
+      finalUrl = `${airtableUrl2}/${pendingRecordId2}`;
       method = "PATCH";
-      console.log(`Updating pending record ${pendingRecordId}`);
+      console.log(`Updating pending record ${pendingRecordId2}`);
     }
     const airtableRes = await fetch(finalUrl, {
       method,
@@ -226,29 +233,6 @@ async function onRequest3({ request, env }) {
     const email = formData.get("email");
     const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
-    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-    let pendingRecordId = null;
-    if (email) {
-      const filterFormula = `AND({Email} = '${email}', {Image_Upload}, NOT({Image_Upload2}))`;
-      const encodedFormula = encodeURIComponent(filterFormula);
-      const checkUrl = `${airtableUrl}?filterByFormula=${encodedFormula}&maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
-      console.log("Checking for pending record with URL:", checkUrl);
-      try {
-        const checkRes = await fetch(checkUrl, {
-          headers: { "Authorization": `Bearer ${env.AIRTABLE_API_KEY}` }
-        });
-        const checkData = await checkRes.json();
-        console.log("Pending record check result:", JSON.stringify(checkData));
-        if (checkData.records && checkData.records.length > 0) {
-          pendingRecordId = checkData.records[0].id;
-          console.log("Found pending record ID:", pendingRecordId);
-        } else {
-          console.log("No pending record found.");
-        }
-      } catch (error) {
-        console.error("Error checking for pending record:", error);
-      }
-    }
     if (uploadColumn === "Image_Upload" && pendingRecordId) {
       return new Response(JSON.stringify({
         error: "You have a pending test package. Please upload your final images to complete the cycle."
@@ -848,7 +832,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-Inwjy9/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-w5RCEW/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -880,7 +864,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-Inwjy9/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-w5RCEW/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

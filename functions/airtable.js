@@ -30,17 +30,28 @@ export async function onRequest({ request, env }) {
     // Check for pending record (Test uploaded, Paid empty)
     let pendingRecordId = null;
     if (email) {
-      const filterFormula = `AND({Email} = '${email}', NOT({Image_Upload} = ''), {Image_Upload2} = '')`;
+      // New Logic: Fetch last 10 records for this email and check in JS
+      const filterFormula = `{Email} = '${email}'`;
       const encodedFormula = encodeURIComponent(filterFormula);
-      const checkUrl = `${airtableUrl}?filterByFormula=${encodedFormula}&maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
+      const checkUrl = `${airtableUrl}?filterByFormula=${encodedFormula}&maxRecords=10&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
 
       try {
         const checkRes = await fetch(checkUrl, {
           headers: { 'Authorization': `Bearer ${env.AIRTABLE_API_KEY}` }
         });
         const checkData = await checkRes.json();
+
         if (checkData.records && checkData.records.length > 0) {
-          pendingRecordId = checkData.records[0].id;
+          // Find a record where Image_Upload has items AND Image_Upload2 is empty
+          const pendingRecord = checkData.records.find(record => {
+            const hasTestImages = record.fields.Image_Upload && record.fields.Image_Upload.length > 0;
+            const hasPaidImages = record.fields.Image_Upload2 && record.fields.Image_Upload2.length > 0;
+            return hasTestImages && !hasPaidImages;
+          });
+
+          if (pendingRecord) {
+            pendingRecordId = pendingRecord.id;
+          }
         }
       } catch (error) {
         console.error("Error checking for pending record:", error);
