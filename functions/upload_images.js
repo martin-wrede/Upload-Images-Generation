@@ -21,29 +21,6 @@ export async function onRequest({ request, env }) {
         const email = formData.get('email');
         const files = formData.getAll('images');
 
-        const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-
-        const timestamp = new Date().toISOString();
-        const uploadedImageUrls = [];
-
-        // Upload files to R2
-        if (files && files.length > 0) {
-            for (const file of files) {
-                if (file instanceof File) {
-                    const key = `${Date.now()}-${file.name}`;
-                    await env.IMAGE_BUCKET.put(key, file.stream());
-                    const publicUrl = `${env.R2_PUBLIC_URL}/${key}`;
-                    uploadedImageUrls.push({ url: publicUrl });
-                }
-            }
-        }
-
-        const fields = {
-            User: name || 'Anonymous',
-            Email: email,
-            Timestamp: timestamp
-        };
-
         if (uploadedImageUrls.length > 0) {
             fields.Image_Upload = uploadedImageUrls;
         }
