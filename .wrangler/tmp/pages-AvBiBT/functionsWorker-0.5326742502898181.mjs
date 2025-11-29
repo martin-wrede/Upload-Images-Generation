@@ -83,21 +83,21 @@ async function onRequest2({ request, env }) {
     const user = formData.get("user");
     const email = formData.get("email");
     const files = formData.getAll("images");
-    const airtableUrl2 = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
+    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-    const uploadedImageUrls2 = [];
+    const uploadedImageUrls = [];
     if (files && files.length > 0) {
       for (const file of files) {
         if (file instanceof File) {
-          const safeName = user ? user.replace(/[^a-zA-Z0-9]/g, "_") : "anonymous";
-          const key = `${safeName}_${Date.now()}_${file.name}`;
+          const safeEmail = email ? email.replace(/[^a-zA-Z0-9]/g, "_") : "anonymous";
+          const key = `${safeEmail}_${Date.now()}_${file.name}`;
           await env.IMAGE_BUCKET.put(key, file.stream());
           const publicUrl = `${env.R2_PUBLIC_URL}/${key}`;
-          uploadedImageUrls2.push({ url: publicUrl });
+          uploadedImageUrls.push({ url: publicUrl });
         }
       }
     }
-    const fields2 = {
+    const fields = {
       Prompt: prompt,
       User: user || "Anonymous",
       Email: email,
@@ -108,10 +108,10 @@ async function onRequest2({ request, env }) {
       ],
       Timestamp: timestamp
     };
-    if (uploadedImageUrls2.length > 0) {
-      fields2.Image_Upload = uploadedImageUrls2;
+    if (uploadedImageUrls.length > 0) {
+      fields.Image_Upload = uploadedImageUrls;
     }
-    console.log(JSON.stringify({ fields: fields2 }));
+    console.log(JSON.stringify({ fields }));
     console.log("Prompt:", prompt);
     console.log("Image URL:", imageUrl);
     console.log("User:", user);
@@ -124,13 +124,13 @@ async function onRequest2({ request, env }) {
         }
       });
     }
-    const airtableRes = await fetch(airtableUrl2, {
+    const airtableRes = await fetch(airtableUrl, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${env.AIRTABLE_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ fields: fields2 })
+      body: JSON.stringify({ fields })
     });
     const data = await airtableRes.json();
     return new Response(JSON.stringify(data), {
@@ -171,6 +171,25 @@ async function onRequest3({ request, env }) {
     const name = formData.get("name");
     const email = formData.get("email");
     const files = formData.getAll("images");
+    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
+    const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+    const uploadedImageUrls = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        if (file instanceof File) {
+          const safeEmail = email ? email.replace(/[^a-zA-Z0-9]/g, "_") : "anonymous";
+          const key = `${safeEmail}_${Date.now()}_${file.name}`;
+          await env.IMAGE_BUCKET.put(key, file.stream());
+          const publicUrl = `${env.R2_PUBLIC_URL}/${key}`;
+          uploadedImageUrls.push({ url: publicUrl });
+        }
+      }
+    }
+    const fields = {
+      User: name || "Anonymous",
+      Email: email,
+      Timestamp: timestamp
+    };
     if (uploadedImageUrls.length > 0) {
       fields.Image_Upload = uploadedImageUrls;
     }
@@ -714,7 +733,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-DzK82H/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-kdyv47/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -746,7 +765,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-DzK82H/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-kdyv47/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
