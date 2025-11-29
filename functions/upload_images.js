@@ -21,29 +21,6 @@ export async function onRequest({ request, env }) {
         const email = formData.get('email');
         const uploadColumn = formData.get('uploadColumn') || 'Image_Upload2'; // Default to Image_Upload2
         const files = formData.getAll('images');
-
-        const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-
-        // Check for pending record (Test uploaded, Paid empty)
-        let pendingRecordId = null;
-        if (email) {
-            const filterFormula = `AND({Email} = '${email}', NOT({Image_Upload} = ''), {Image_Upload2} = '')`;
-            const encodedFormula = encodeURIComponent(filterFormula);
-            const checkUrl = `${airtableUrl}?filterByFormula=${encodedFormula}&maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
-
-            try {
-                const checkRes = await fetch(checkUrl, {
-                    headers: { 'Authorization': `Bearer ${env.AIRTABLE_API_KEY}` }
-                });
-                const checkData = await checkRes.json();
-                if (checkData.records && checkData.records.length > 0) {
-                    pendingRecordId = checkData.records[0].id;
-                }
-            } catch (error) {
-                console.error("Error checking for pending record:", error);
-            }
-        }
-
         // Logic: Block Test if pending exists
         if (uploadColumn === 'Image_Upload' && pendingRecordId) {
             return new Response(JSON.stringify({

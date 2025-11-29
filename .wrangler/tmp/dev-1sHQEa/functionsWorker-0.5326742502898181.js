@@ -85,25 +85,25 @@ async function onRequest2({ request, env }) {
     const email = formData.get("email");
     const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
-    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-    let pendingRecordId = null;
+    const airtableUrl2 = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
+    let pendingRecordId2 = null;
     if (email) {
       const filterFormula = `AND({Email} = '${email}', NOT({Image_Upload} = ''), {Image_Upload2} = '')`;
       const encodedFormula = encodeURIComponent(filterFormula);
-      const checkUrl = `${airtableUrl}?filterByFormula=${encodedFormula}&maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
+      const checkUrl = `${airtableUrl2}?filterByFormula=${encodedFormula}&maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
       try {
         const checkRes = await fetch(checkUrl, {
           headers: { "Authorization": `Bearer ${env.AIRTABLE_API_KEY}` }
         });
         const checkData = await checkRes.json();
         if (checkData.records && checkData.records.length > 0) {
-          pendingRecordId = checkData.records[0].id;
+          pendingRecordId2 = checkData.records[0].id;
         }
       } catch (error) {
         console.error("Error checking for pending record:", error);
       }
     }
-    if (uploadColumn === "Image_Upload" && pendingRecordId) {
+    if (uploadColumn === "Image_Upload" && pendingRecordId2) {
       return new Response(JSON.stringify({
         error: "You have a pending test package. Please upload your final images to complete the cycle."
       }), {
@@ -150,12 +150,12 @@ async function onRequest2({ request, env }) {
         }
       });
     }
-    let finalUrl = airtableUrl;
+    let finalUrl = airtableUrl2;
     let method = "POST";
-    if (uploadColumn === "Image_Upload2" && pendingRecordId) {
-      finalUrl = `${airtableUrl}/${pendingRecordId}`;
+    if (uploadColumn === "Image_Upload2" && pendingRecordId2) {
+      finalUrl = `${airtableUrl2}/${pendingRecordId2}`;
       method = "PATCH";
-      console.log(`Updating pending record ${pendingRecordId}`);
+      console.log(`Updating pending record ${pendingRecordId2}`);
     }
     const airtableRes = await fetch(finalUrl, {
       method,
@@ -225,24 +225,6 @@ async function onRequest3({ request, env }) {
     const email = formData.get("email");
     const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
-    const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
-    let pendingRecordId = null;
-    if (email) {
-      const filterFormula = `AND({Email} = '${email}', NOT({Image_Upload} = ''), {Image_Upload2} = '')`;
-      const encodedFormula = encodeURIComponent(filterFormula);
-      const checkUrl = `${airtableUrl}?filterByFormula=${encodedFormula}&maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc`;
-      try {
-        const checkRes = await fetch(checkUrl, {
-          headers: { "Authorization": `Bearer ${env.AIRTABLE_API_KEY}` }
-        });
-        const checkData = await checkRes.json();
-        if (checkData.records && checkData.records.length > 0) {
-          pendingRecordId = checkData.records[0].id;
-        }
-      } catch (error) {
-        console.error("Error checking for pending record:", error);
-      }
-    }
     if (uploadColumn === "Image_Upload" && pendingRecordId) {
       return new Response(JSON.stringify({
         error: "You have a pending test package. Please upload your final images to complete the cycle."
