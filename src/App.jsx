@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 
 
 const PACKAGES = {
-  starter: { title: 'Starter Package', limit: 5, description: 'Please upload 5 images.' },
-  normal: { title: 'Normal Package', limit: 10, description: 'Please upload 10 images.' },
-  default: { title: 'Image Upload', limit: 10, description: 'Please upload your images.' }
+  test: { title: 'Test Package', limit: 2, description: 'Please upload 2 test images.', column: 'Image_Upload' },
+  starter: { title: 'Starter Package', limit: 5, description: 'Please upload 5 images.', column: 'Image_Upload2' },
+  normal: { title: 'Normal Package', limit: 10, description: 'Please upload 10 images.', column: 'Image_Upload2' },
+  default: { title: 'Image Upload', limit: 10, description: 'Please upload your images.', column: 'Image_Upload2' }
 };
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
       const formData = new FormData();
       formData.append('name', name);
       formData.append('email', email);
+      formData.append('uploadColumn', currentPackage.column); // Send target column
 
       files.forEach((file) => {
         formData.append('images', file);
@@ -85,7 +87,7 @@ function App() {
       if (!imageUrl) throw new Error("Image URL missing in OpenAI response");
 
       // Save to Airtable
-      await saveToAirtable(prompt, imageUrl, 'User123', email, files);
+      await saveToAirtable(prompt, imageUrl, 'User123', email, files, currentPackage.column);
 
     } catch (error) {
       console.error("Error generating image:", error);
@@ -95,14 +97,15 @@ function App() {
   };
 
 
-  const saveToAirtable = async (prompt, imageUrl, user = 'Anonymous', email = '', files = []) => {
-    console.log("📦 Saving to Airtable:", { prompt, imageUrl, user, email, files });
+  const saveToAirtable = async (prompt, imageUrl, user = 'Anonymous', email = '', files = [], uploadColumn = 'Image_Upload2') => {
+    console.log("📦 Saving to Airtable:", { prompt, imageUrl, user, email, files, uploadColumn });
     try {
       const formData = new FormData();
       formData.append('prompt', prompt);
       formData.append('imageUrl', imageUrl);
       formData.append('user', user);
       formData.append('email', email);
+      formData.append('uploadColumn', uploadColumn); // Send target column
 
       files.forEach((file) => {
         formData.append('images', file);

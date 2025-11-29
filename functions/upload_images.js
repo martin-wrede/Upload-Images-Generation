@@ -19,6 +19,7 @@ export async function onRequest({ request, env }) {
         const formData = await request.formData();
         const name = formData.get('name');
         const email = formData.get('email');
+        const uploadColumn = formData.get('uploadColumn') || 'Image_Upload2'; // Default to Image_Upload2
         const files = formData.getAll('images');
 
         const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
@@ -51,7 +52,7 @@ export async function onRequest({ request, env }) {
         }
 
         if (uploadedImageUrls.length > 0) {
-            fields.Image_Upload = uploadedImageUrls;
+            fields[uploadColumn] = uploadedImageUrls;
         }
 
         console.log("Saving upload to Airtable with fields:", JSON.stringify(fields, null, 2));

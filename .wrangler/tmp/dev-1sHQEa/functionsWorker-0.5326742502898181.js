@@ -83,6 +83,7 @@ async function onRequest2({ request, env }) {
     const imageUrl = formData.get("imageUrl");
     const user = formData.get("user");
     const email = formData.get("email");
+    const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
     const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
@@ -101,7 +102,6 @@ async function onRequest2({ request, env }) {
     const fields = {
       Prompt: prompt,
       User: user || "Anonymous",
-      Email: email,
       Image: [
         {
           url: imageUrl
@@ -109,8 +109,11 @@ async function onRequest2({ request, env }) {
       ],
       Timestamp: timestamp
     };
+    if (email) {
+      fields.Email = email;
+    }
     if (uploadedImageUrls.length > 0) {
-      fields.Image_Upload = uploadedImageUrls;
+      fields[uploadColumn] = uploadedImageUrls;
     }
     console.log(JSON.stringify({ fields }));
     console.log("Saving to Airtable with fields:", JSON.stringify(fields, null, 2));
@@ -189,6 +192,7 @@ async function onRequest3({ request, env }) {
     const formData = await request.formData();
     const name = formData.get("name");
     const email = formData.get("email");
+    const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
     const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
@@ -212,7 +216,7 @@ async function onRequest3({ request, env }) {
       fields.Email = email;
     }
     if (uploadedImageUrls.length > 0) {
-      fields.Image_Upload = uploadedImageUrls;
+      fields[uploadColumn] = uploadedImageUrls;
     }
     console.log("Saving upload to Airtable with fields:", JSON.stringify(fields, null, 2));
     const airtableRes = await fetch(airtableUrl, {

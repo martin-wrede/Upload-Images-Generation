@@ -82,6 +82,7 @@ async function onRequest2({ request, env }) {
     const imageUrl = formData.get("imageUrl");
     const user = formData.get("user");
     const email = formData.get("email");
+    const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
     const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
@@ -100,7 +101,6 @@ async function onRequest2({ request, env }) {
     const fields = {
       Prompt: prompt,
       User: user || "Anonymous",
-      Email: email,
       Image: [
         {
           url: imageUrl
@@ -108,8 +108,11 @@ async function onRequest2({ request, env }) {
       ],
       Timestamp: timestamp
     };
+    if (email) {
+      fields.Email = email;
+    }
     if (uploadedImageUrls.length > 0) {
-      fields.Image_Upload = uploadedImageUrls;
+      fields[uploadColumn] = uploadedImageUrls;
     }
     console.log(JSON.stringify({ fields }));
     console.log("Saving to Airtable with fields:", JSON.stringify(fields, null, 2));
@@ -189,6 +192,7 @@ async function onRequest3({ request, env }) {
     const formData = await request.formData();
     const name = formData.get("name");
     const email = formData.get("email");
+    const uploadColumn = formData.get("uploadColumn") || "Image_Upload2";
     const files = formData.getAll("images");
     const airtableUrl = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${env.AIRTABLE_TABLE_NAME}`;
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
@@ -212,7 +216,7 @@ async function onRequest3({ request, env }) {
       fields.Email = email;
     }
     if (uploadedImageUrls.length > 0) {
-      fields.Image_Upload = uploadedImageUrls;
+      fields[uploadColumn] = uploadedImageUrls;
     }
     console.log("Saving upload to Airtable with fields:", JSON.stringify(fields, null, 2));
     const airtableRes = await fetch(airtableUrl, {
@@ -775,7 +779,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-KAfe6x/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-94ty01/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -807,7 +811,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-KAfe6x/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-94ty01/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
