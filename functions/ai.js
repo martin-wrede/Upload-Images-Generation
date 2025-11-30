@@ -20,11 +20,23 @@ export async function onRequest({ request, env }) {
   }
 
   try {
-    const { prompt } = await request.json();
+    const contentType = request.headers.get("Content-Type") || "";
+    let prompt = "";
+    let imageFile = null;
 
-    if (!prompt) {
+    // Handle both JSON and FormData
+    if (contentType.includes("application/json")) {
+      const body = await request.json();
+      prompt = body.prompt;
+    } else if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      prompt = formData.get("prompt");
+      imageFile = formData.get("image");
+    }
+
+    if (!prompt && !imageFile) {
       return new Response(
-        JSON.stringify({ error: "Missing 'prompt' field" }),
+        JSON.stringify({ error: "Missing 'prompt' or 'image'" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -32,21 +44,71 @@ export async function onRequest({ request, env }) {
       );
     }
 
-    // ✅ Generate image using OpenAI API
+    let finalPrompt = prompt;
+
+    // ✅ If an image is provided, describe it first using GPT-4o
+    if (imageFile) {
+      console.log("🖼️ Image received. Analyzing with GPT-4o...");
+      const arrayBuffer = await imageFile.arrayBuffer();
+      const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const dataUrl = `data:${imageFile.type};base64,${base64Image}`;
+
+      const descriptionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.VITE_APP_OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Describe this image in detail, focusing on the main subject, setting, lighting, and style. Be concise but descriptive." },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ],
+            },
+          ],
+          max_tokens: 300,
+        }),
+      });
+
+      const descriptionData = await descriptionResponse.json();
+
+      if (descriptionData.error) {
+        throw new Error(`GPT-4o Error: ${descriptionData.error.message}`);
+      }
+
+      const description = descriptionData.choices[0].message.content;
+      console.log("📝 Image Description:", description);
+
+      // Combine description with user's modification prompt
+      finalPrompt = `Create an image based on this description: "${description}". \n\nModification request: ${prompt}. \n\nEnsure the modification is applied while keeping the original vibe.`;
+    }
+
+    console.log("🎨 Generating image with prompt:", finalPrompt);
+
+    // ✅ Generate image using OpenAI API (DALL-E 3)
     const apiResponse = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${env.VITE_APP_OPENAI_API_KEY}`, // ✅ Match your .env variable name
+        "Authorization": `Bearer ${env.VITE_APP_OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt,
+        model: "dall-e-3",
+        prompt: finalPrompt,
         n: 1,
         size: "1024x1024",
       }),
     });
 
     const data = await apiResponse.json();
+
+    if (data.error) {
+      throw new Error(`DALL-E 3 Error: ${data.error.message}`);
+    }
 
     return new Response(JSON.stringify(data), {
       status: 200,
@@ -56,6 +118,7 @@ export async function onRequest({ request, env }) {
       },
     });
   } catch (error) {
+    console.error("❌ Error in /ai function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {

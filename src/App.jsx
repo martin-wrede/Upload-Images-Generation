@@ -168,25 +168,108 @@ function App() {
         </button>
       </div>
 
-      {/* 
+      {/** AI image gneration starts here */}
+
 
       <hr style={{ margin: '2rem 0' }} />
 
-      <h1>Generate an Image with AI</h1>
+      <h1>Generate or Modify Image with AI</h1>
+
+      {files.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Select an image to modify (optional):</label>
+          <select
+            onChange={(e) => {
+              const selectedIndex = e.target.value;
+              // Store selected file index or null
+              // We'll just use a local variable or state if we wanted to be robust, 
+              // but for now let's just read it from the select in generateImage or add a state.
+              // Let's add a state for selectedImageIndex
+            }}
+            id="imageSelector"
+            style={{ padding: '0.5rem', width: '300px' }}
+          >
+            <option value="">-- Create new image (No file) --</option>
+            {files.map((file, index) => (
+              <option key={index} value={index}>
+                {file.name}
+              </option>
+            ))}
+          </select>
+          <p style={{ fontSize: '0.8rem', color: '#666' }}>
+            * You don't need to upload to Airtable first. Just select a file above.
+          </p>
+        </div>
+      )}
+
       <input
         type="text"
-        placeholder="Enter your prompt"
+        placeholder="Enter your prompt (e.g. 'make sky blue')"
         value={prompt}
         onChange={e => setPrompt(e.target.value)}
         style={{ padding: '0.5rem', width: '300px' }}
       />
       <button
-        onClick={generateImage}
+        onClick={async () => {
+          setIsLoading(true);
+          try {
+            const imageSelector = document.getElementById('imageSelector');
+            const selectedIndex = imageSelector ? imageSelector.value : "";
+            const selectedFile = selectedIndex !== "" ? files[selectedIndex] : null;
+
+            let body;
+            let headers = {};
+
+            if (selectedFile) {
+              const formData = new FormData();
+              formData.append('prompt', prompt);
+              formData.append('image', selectedFile);
+              formData.append('user', 'User123');
+              body = formData;
+              // Fetch automatically sets Content-Type to multipart/form-data with boundary
+            } else {
+              body = JSON.stringify({
+                prompt,
+                user: 'User123',
+              });
+              headers['Content-Type'] = 'application/json';
+            }
+
+            const response = await fetch('/ai', {
+              method: 'POST',
+              headers: headers,
+              body: body,
+            });
+
+            if (!response.ok) {
+              const errData = await response.json();
+              throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const imageUrl = data.data?.[0]?.url;
+            console.log("OpenAI Response:", data);
+
+            setResult(imageUrl);
+
+            if (!imageUrl) throw new Error("Image URL missing in OpenAI response");
+
+            // Save to Airtable (optional, keeping existing logic)
+            // Note: If we modified an image, we might want to save that context, but for now just saving the result.
+            await saveToAirtable(prompt, imageUrl, 'User123', email, files, currentPackage.column);
+
+          } catch (error) {
+            console.error("Error generating image:", error);
+            alert(`Error generating image: ${error.message}`);
+          } finally {
+            setIsLoading(false);
+          }
+        }}
         disabled={isLoading}
         style={{ marginLeft: '1rem', padding: '0.5rem 1rem' }}
       >
 
-        {isLoading ? 'Generating...' : 'Generate'}
+        {isLoading ? 'Processing...' : 'Generate / Modify'}
       </button>
 
       {result && (
@@ -194,8 +277,6 @@ function App() {
           <img src={result} alt="Generated" style={{ maxWidth: '100%', height: 'auto' }} />
         </div>
       )}
-
-      */}
 
     </div>
   );
