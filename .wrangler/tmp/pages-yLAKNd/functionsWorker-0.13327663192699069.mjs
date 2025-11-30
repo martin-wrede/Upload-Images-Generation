@@ -41,7 +41,13 @@ async function onRequest({ request, env }) {
     if (imageFile) {
       console.log("\u{1F5BC}\uFE0F Image received. Analyzing with GPT-4o...");
       const arrayBuffer = await imageFile.arrayBuffer();
-      const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      let binary = "";
+      const bytes = new Uint8Array(arrayBuffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Image = btoa(binary);
       const dataUrl = `data:${imageFile.type};base64,${base64Image}`;
       const descriptionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -915,7 +921,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-fwAzFw/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-Kk4d5E/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -947,7 +953,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-fwAzFw/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-Kk4d5E/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

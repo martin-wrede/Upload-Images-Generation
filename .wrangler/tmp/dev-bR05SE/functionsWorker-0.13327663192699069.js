@@ -43,7 +43,13 @@ async function onRequest({ request, env }) {
     if (imageFile) {
       console.log("\u{1F5BC}\uFE0F Image received. Analyzing with GPT-4o...");
       const arrayBuffer = await imageFile.arrayBuffer();
-      const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      let binary = "";
+      const bytes = new Uint8Array(arrayBuffer);
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Image = btoa(binary);
       const dataUrl = `data:${imageFile.type};base64,${base64Image}`;
       const descriptionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
